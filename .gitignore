@@ -1,0 +1,26 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.nuxt/
+.output/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Private uploads and local data
+uploads/
+# Local AI/editor assistant files
+backend/.agents/
+backend/.claude/
+backend/.windsurf/
+
+# Unintended nested React/Vite frontend
+backend/frontend/

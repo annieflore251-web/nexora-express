@@ -1,0 +1,121 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  COORDINATOR
+  COURIER
+  PARTNER
+}
+
+enum ParcelStatus {
+  RECEIVED
+  REGISTERED
+  AWAITING_DELIVERY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  DELIVERY_FAILED
+  RETURNED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String
+  role         Role     @default(COURIER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  auditLogs AuditLog[]
+
+  registeredParcels Parcel[] @relation("ParcelRegisteredBy")
+  assignedParcels   Parcel[] @relation("ParcelAssignedCourier")
+  statusChanges     ParcelStatusHistory[]
+}
+
+model Parcel {
+  id                    String       @id @default(uuid())
+  trackingNumber        String       @unique
+  externalTrackingNumber String?
+  sendingAgency         String?
+  recipientName         String
+  recipientPhone        String
+  recipientAddress      String?
+  deliveryInstructions  String?
+  description           String?
+  conditionOnArrival    String?
+  sealNumber            String?
+  status                ParcelStatus @default(RECEIVED)
+
+  registeredById String
+  registeredBy   User   @relation("ParcelRegisteredBy", fields: [registeredById], references: [id])
+
+  assignedCourierId String?
+  assignedCourier   User?   @relation("ParcelAssignedCourier", fields: [assignedCourierId], references: [id])
+
+  receivedAt DateTime  @default(now())
+  deliveredAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deliveredToName  String?
+deliveryProofNote String?
+
+  statusHistory ParcelStatusHistory[]
+  photos        ParcelPhoto[]
+
+  @@index([status])
+  @@index([recipientPhone])
+  @@index([assignedCourierId])
+}
+
+model ParcelStatusHistory {
+  id        String       @id @default(uuid())
+  parcelId  String
+  status    ParcelStatus
+  note      String?
+  changedById String
+  changedBy User         @relation(fields: [changedById], references: [id])
+  changedAt DateTime     @default(now())
+
+  parcel Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@index([parcelId, changedAt])
+}
+
+model ParcelPhoto {
+  id        String   @id @default(uuid())
+  parcelId  String
+  url       String
+  purpose   String?
+  createdAt DateTime @default(now())
+
+  parcel Parcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+
+  @@index([parcelId])
+}
+
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
